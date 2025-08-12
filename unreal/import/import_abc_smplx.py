@@ -11,7 +11,7 @@ import sys
 import time
 import unreal
 
-data_root = r"C:\bedlam\abc\smplx"
+data_root = r"E:\CS\Graphics\bedlam_render\abc"
 
 #whitelist_subjects_path = r"C:\bedlam\render\config\whitelist_subjects.txt"
 whitelist_subjects_path = None

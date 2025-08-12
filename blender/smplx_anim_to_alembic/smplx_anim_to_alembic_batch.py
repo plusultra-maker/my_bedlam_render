@@ -17,7 +17,7 @@ import sys
 import time
 
 # Globals
-BLENDER_APP_PATH = r"C:\apps\blender-3.2.2-windows-x64\blender.exe"
+BLENDER_APP_PATH = r"D:\Blender\blender.exe"
 DEFAULT_PROCESSES = 6
 
 def worker(blender_app_path, input, output):
@@ -67,3 +67,5 @@ if __name__ == "__main__":
 
     result = pool.map(worker_args, tasklist)
     print(f"Finished. Total batch conversion time: {(time.perf_counter() - start_time):.1f}s")
+
+# python smplx_anim_to_alembic_batch.py E:\CS\Graphics\bedlam_render\animations\gendered_ground_truth_test E:\CS\Graphics\bedlam_render\abc 6

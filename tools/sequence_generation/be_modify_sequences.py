@@ -15,9 +15,9 @@ import sys
 from typing import NamedTuple
 
 # Globals
-SUBJECT_GENDER_PATH = Path("../../config/gender.csv")                       # Gender information for each subject
-TEXTURES_OVERLAY_PATH = Path("../../config/textures_clothing_overlay.json") # List of available overlay textures per gender
-WHITELIST_HAIR_PATH = Path("../../config/whitelist_hair.json")
+SUBJECT_GENDER_PATH = Path("../../config_test/gender.csv")                       # Gender information for each subject
+TEXTURES_OVERLAY_PATH = Path("../../config_test/textures_clothing_overlay.json") # List of available overlay textures per gender
+WHITELIST_HAIR_PATH = Path("../../config_test/whitelist_hair.json")
 
 # Predefined configurations
 # Notes:

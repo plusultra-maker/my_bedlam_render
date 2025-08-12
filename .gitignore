@@ -5,4 +5,12 @@ __pycache__/
 # BEDLAM
 # Ground trajectory masks
 tools/sequence_generation/images/
+BE_IBL_20230711/
+BE_IBL_20230711.zip
+animations/
+abc/
+.vscode/
+bedlam_body_textures_meshcapade/
 
+images/
+unrealego/

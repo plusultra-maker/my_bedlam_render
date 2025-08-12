@@ -10,7 +10,7 @@ import csv
 from dataclasses import dataclass
 import re
 from math import radians, tan
-import sys
+import sys, os
 import time
 import unreal
 
@@ -134,7 +134,7 @@ def add_geometry_cache(level_sequence, sequence_body_index, layer_suffix, start_
     transform_channels[4].set_default(pitch) # pitch
     transform_channels[5].set_default(yaw)   # yaw
 
-    return
+    return body_binding
 
 
 def add_hair(level_sequence, sequence_body_index, layer_suffix, start_frame, end_frame, hair_path, animation_path, x, y, z, yaw, pitch, roll,):
@@ -306,7 +306,7 @@ def change_binding_end_keyframe_times(binding, new_frame):
                         end_key = channel_keys[1]
                         end_key.set_time(unreal.FrameNumber(new_frame))
 
-def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_actor, sequence_bodies, sequence_frames, hdri_name, camera_hfov=None, camera_movement="Static", cameraroot_yaw=None, cameraroot_location=None):
+def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_actor, sequence_bodies, sequence_frames, hdri_name, camera_hfov=None, camera_movement="Static", cameraroot_yaw=None, cameraroot_location=None, pov_camera=False):
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 
     level_sequence_path = level_sequences_root + name
@@ -354,35 +354,42 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
 
     cameraroot_binding = None
 
-    if camera_movement == "Static":
-        # Create new camera
-        camera_cut_section = add_static_camera(level_sequence, camera_actor, camera_pose, camera_hfov)
-    else:
-        # Use existing camera from LevelSequence template
-        master_track = level_sequence.get_master_tracks()[0]
-        camera_cut_section = master_track.get_sections()[0]
-        camera_cut_section.set_start_frame(-WARMUP_FRAMES) # Use negative frames as warmup frames
+    if not pov_camera:
+        if camera_movement == "Static":
+            # Create new camera
+            camera_cut_section = add_static_camera(level_sequence, camera_actor, camera_pose, camera_hfov)
+        else:
+            # Use existing camera from LevelSequence template
+            master_track = level_sequence.get_master_tracks()[0]
+            camera_cut_section = master_track.get_sections()[0]
+            camera_cut_section.set_start_frame(-WARMUP_FRAMES) # Use negative frames as warmup frames
 
-        if camera_movement.startswith("Zoom") or camera_movement.startswith("Orbit"):
-            # Add camera transform track and set static camera pose
-            for binding in level_sequence.get_possessables():
-                binding_name = binding.get_name()
-                if binding_name == "BE_CineCameraActor_Blueprint":
-                    add_transform_track(binding, camera_pose)
+            if camera_movement.startswith("Zoom") or camera_movement.startswith("Orbit"):
+                # Add camera transform track and set static camera pose
+                for binding in level_sequence.get_possessables():
+                    binding_name = binding.get_name()
+                    if binding_name == "BE_CineCameraActor_Blueprint":
+                        add_transform_track(binding, camera_pose)
 
-                if binding_name == "CameraComponent":
-                    # Set HFOV
-                    focal_length = get_focal_length(camera_actor.get_cine_camera_component(), camera_hfov)
-                    binding.get_tracks()[0].get_sections()[0].get_channels()[0].set_default(focal_length)
-
-                if camera_movement.startswith("Zoom"):
                     if binding_name == "CameraComponent":
-                        # Set end focal length keyframe time to end of sequence
-                        change_binding_end_keyframe_times(binding, sequence_frames)
-                elif camera_movement.startswith("Orbit"):
-                    if binding_name == "BE_CameraRoot":
-                        cameraroot_binding = binding
-                        change_binding_end_keyframe_times(binding, sequence_frames)
+                        # Set HFOV
+                        focal_length = get_focal_length(camera_actor.get_cine_camera_component(), camera_hfov)
+                        binding.get_tracks()[0].get_sections()[0].get_channels()[0].set_default(focal_length)
+
+                    if camera_movement.startswith("Zoom"):
+                        if binding_name == "CameraComponent":
+                            # Set end focal length keyframe time to end of sequence
+                            change_binding_end_keyframe_times(binding, sequence_frames)
+                    elif camera_movement.startswith("Orbit"):
+                        if binding_name == "BE_CameraRoot":
+                            cameraroot_binding = binding
+                            change_binding_end_keyframe_times(binding, sequence_frames)
+    else:
+        # --- new pov logic ---
+        unreal.log(f"  Setting up POV camera for sequence {name}")
+        camera_cut_track = level_sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
+        camera_cut_section = camera_cut_track.add_section()
+        camera_cut_section.set_start_frame(-WARMUP_FRAMES)
 
     if (cameraroot_yaw is not None) or (cameraroot_location is not None):
         cameraroot_actor = camera_actor.get_attach_parent_actor()
@@ -458,6 +465,8 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
 
         sequence_name_section.get_channels()[0].set_default(name)
 
+    pov_host_binding = None
+
     for sequence_body_index, sequence_body in enumerate(sequence_bodies):
 
         body_object = unreal.load_object(None, sequence_body.body_path)
@@ -480,7 +489,18 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
             texture_body_path = f"Texture2D'{texture_body_root}/{gender}/skin/{sequence_body.texture_body}.{sequence_body.texture_body}'"
             texture_clothing_overlay_path = f"Texture2D'{texture_clothing_overlay_root}/{sequence_body.texture_clothing_overlay}.{sequence_body.texture_clothing_overlay}'"
 
-            add_geometry_cache(level_sequence, sequence_body_index, "body", animation_start_frame, animation_end_frame, body_object, sequence_body.x, sequence_body.y, sequence_body.z, sequence_body.yaw, sequence_body.pitch, sequence_body.roll, None, texture_body_path, texture_clothing_overlay_path)
+            body_binding=add_geometry_cache(level_sequence, sequence_body_index, "body", animation_start_frame, animation_end_frame, body_object, sequence_body.x, sequence_body.y, sequence_body.z, sequence_body.yaw, sequence_body.pitch, sequence_body.roll, None, texture_body_path, texture_clothing_overlay_path)
+
+            if pov_camera and sequence_body_index == 0:
+                pov_host_binding = body_binding
+                
+                # 隐藏宿主的身体以避免相机穿模。
+                # 一个更精细的方法是只隐藏头部，但这需要修改材质或骨骼网格体。
+                visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
+                visibility_section = visibility_track.add_section()
+                visibility_section.set_range(-WARMUP_FRAMES, end_frame)
+                # 设置为False来隐藏
+                visibility_section.get_channels()[0].set_default(False)
 
         else:
             # Add body
@@ -492,8 +512,21 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
                     unreal.log_error(f"Cannot load material: {material_asset_path}")
                     return False
 
-            add_geometry_cache(level_sequence, sequence_body_index, "body", animation_start_frame, animation_end_frame, body_object, sequence_body.x, sequence_body.y, sequence_body.z, sequence_body.yaw, sequence_body.pitch, sequence_body.roll, material)
+            body_binding=add_geometry_cache(level_sequence, sequence_body_index, "body", animation_start_frame, animation_end_frame, body_object, sequence_body.x, sequence_body.y, sequence_body.z, sequence_body.yaw, sequence_body.pitch, sequence_body.roll, material)
 
+
+            if pov_camera and sequence_body_index == 0:
+                pov_host_binding = body_binding
+                
+                # 隐藏宿主的身体以避免相机穿模。
+                # 一个更精细的方法是只隐藏头部，但这需要修改材质或骨骼网格体。
+                visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
+                visibility_section = visibility_track.add_section()
+                visibility_section.set_range(-WARMUP_FRAMES, end_frame)
+                # 设置为False来隐藏
+                visibility_section.get_channels()[0].set_default(False)
+                
+            
             # Add clothing if available
             if sequence_body.clothing_path is not None:
                 clothing_object = unreal.load_object(None, sequence_body.clothing_path)
@@ -516,6 +549,67 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
             success = add_hair(level_sequence, sequence_body_index, "hair", animation_start_frame, animation_end_frame, sequence_body.hair_path, sequence_body.animation_path, sequence_body.x, sequence_body.y, sequence_body.z, sequence_body.yaw, sequence_body.pitch, sequence_body.roll)
             if not success:
                 return False
+            
+    if pov_host_binding is not None:
+        # 将主相机绑定到LevelSequence
+        camera_binding = level_sequence.add_possessable(camera_actor)
+        
+        # 新增：设置POV相机的HFOV
+        if camera_hfov is not None:
+            # 添加相机组件绑定
+            cine_camera_component = camera_actor.get_cine_camera_component()
+            camera_component_binding = level_sequence.add_possessable(cine_camera_component)
+            camera_component_binding.set_parent(camera_binding)
+
+            # 添加焦距轨道
+            focal_length_track = camera_component_binding.add_track(unreal.MovieSceneFloatTrack)
+            focal_length_track.set_property_name_and_path('CurrentFocalLength', 'CurrentFocalLength')
+            focal_length_section = focal_length_track.add_section()
+            focal_length_section.set_start_frame_bounded(False)
+            focal_length_section.set_end_frame_bounded(False)
+
+            focal_length = get_focal_length(cine_camera_component, camera_hfov)
+            focal_length_section.get_channels()[0].set_default(focal_length)
+        
+        # 添加附加轨道 (Attach Track)
+        attach_track = camera_binding.add_track(unreal.MovieScene3DAttachTrack)
+        attach_section = attach_track.add_section()
+        attach_section.set_range(-WARMUP_FRAMES, end_frame)
+        
+        # 修复：创建正确的 MovieSceneObjectBindingID 对象
+        pov_host_binding_id = unreal.MovieSceneObjectBindingID()
+        pov_host_binding_id.set_editor_property("Guid", pov_host_binding.get_id())
+        attach_section.set_constraint_binding_id(pov_host_binding_id)
+        # 附加到头部的骨骼上
+        attach_section.set_editor_property("attach_socket_name", "head")
+
+        # 新增：添加相机的局部偏移来调整视角
+        # 这会将相机稍微向前和向上偏移，避免直接在头骨中心
+        transform_track = camera_binding.add_track(unreal.MovieScene3DTransformTrack)
+        transform_section = transform_track.add_section()
+        transform_section.set_start_frame_bounded(False)
+        transform_section.set_end_frame_bounded(False)
+        transform_channels = transform_section.get_channels()
+        
+        # 局部偏移设置 (相对于头骨的局部坐标系)
+        # X: 向前偏移 (正值向前)
+        # Y: 向右偏移 (正值向右) 
+        # Z: 向上偏移 (正值向上)
+        pov_offset_x = 15.0  # 向前15cm，避免在头部内部
+        pov_offset_y = 0.0   # 不左右偏移
+        pov_offset_z = 5.0   # 向上5cm，模拟眼睛位置
+        
+        transform_channels[0].set_default(pov_offset_x) # location X
+        transform_channels[1].set_default(pov_offset_y) # location Y  
+        transform_channels[2].set_default(pov_offset_z) # location Z
+        transform_channels[3].set_default(0.0) # roll
+        transform_channels[4].set_default(0.0) # pitch
+        transform_channels[5].set_default(0.0) # yaw
+
+        # 将Camera Cut轨道的相机设置为我们刚绑定的相机
+        camera_binding_id = unreal.MovieSceneObjectBindingID()
+        camera_binding_id.set_editor_property("Guid", camera_binding.get_id())
+        camera_cut_section.set_editor_property("CameraBindingID", camera_binding_id)
 
     unreal.EditorAssetLibrary.save_asset(level_sequence.get_path_name())
 
@@ -567,6 +661,7 @@ if __name__ == '__main__':
             camera_pose = None
             cameraroot_yaw = None
             cameraroot_location = None
+            pov_camera = False
 
             for row_index, row in enumerate(csv_rows):
                 if row["Type"] == "Comment":
@@ -597,6 +692,12 @@ if __name__ == '__main__':
                         camera_hfov = float(group_config["camera_hfov"])
                     else:
                         camera_hfov = None
+
+                    # check if is POV camera
+                    if "pov_camera" in group_config and group_config["pov_camera"] == "true":
+                        pov_camera = True
+                    else:
+                        pov_camera = False
 
                     if "cameraroot_yaw" in group_config:
                         cameraroot_yaw = float(group_config["cameraroot_yaw"])
@@ -710,7 +811,7 @@ if __name__ == '__main__':
                         add_sequence = True
 
                     if add_sequence:
-                        success = add_level_sequence(sequence_name, camera_actor, camera_pose, ground_truth_logger_actor, sequence_bodies, sequence_frames, hdri_name, camera_hfov, camera_movement, cameraroot_yaw, cameraroot_location)
+                        success = add_level_sequence(sequence_name, camera_actor, camera_pose, ground_truth_logger_actor, sequence_bodies, sequence_frames, hdri_name, camera_hfov, camera_movement, cameraroot_yaw, cameraroot_location, pov_camera)
 
                         # Remove added layers used for segmentation mask naming
                         layer_subsystem = unreal.get_editor_subsystem(unreal.LayersSubsystem)

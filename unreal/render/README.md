@@ -76,3 +76,9 @@ BEDLAM rendering works with vanilla Unreal Editor 5.0.3 release. Unreal source c
 
 + Camera ground truth
     + See [unreal_coordinate_system.md](unreal_coordinate_system.md) for details on the used format for representing camera ground truth intrinsics/extrinsics for each image.
+
+E:\CS\Graphics\bedlam_render\images\test
+be_seq_camrandom.csv
+be_seq.csv
+be_seq_pov.csv
+be_seq_pov_test.csv
