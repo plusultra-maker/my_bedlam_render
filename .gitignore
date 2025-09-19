@@ -16,6 +16,7 @@ fbx/
 fbx_test/
 images/
 unrealego/
+gendered_ground_truth/
 
 # Large files
 *.zip
