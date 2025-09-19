@@ -31,6 +31,23 @@ If you want to use the BEDLAM animations:
 Example: 
 ```
 py -3 smplx_anim_to_alembic_batch.py C:\bedlam\animations\gendered_ground_truth C:\bedlam\abc 12
+
+python smplx_anim_to_alembic_batch.py E:\CS\Graphics\bedlam_render\animations\gendered_ground_truth_test E:\CS\Graphics\bedlam_render\abc_test 6
+```
+
+# Exporting to FBX
+The process is identical to exporting to Alembic, but uses different scripts to produce `.fbx` files instead. FBX files include the armature, which can be useful in different workflows.
+
+## FBX Usage
+1. Edit [smplx_anim_to_fbx_batch.py](smplx_anim_to_fbx_batch.py) and change `BLENDER_APP_PATH` to point to where you installed Blender with the SMPL-X Blender add-on.
+2. Open a Windows command prompt.
+3. Run the multiprocess batch conversion for FBX.
+
+Example: 
+```
+py -3 smplx_anim_to_fbx_batch.py C:\bedlam\animations\gendered_ground_truth C:\bedlam\fbx 12
+
+python smplx_anim_to_fbx_batch.py E:\CS\Graphics\bedlam_render\animations\gendered_ground_truth_test E:\CS\Graphics\bedlam_render\fbx_test 6
 ```
 
 # Notes
