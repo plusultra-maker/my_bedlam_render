@@ -2,10 +2,10 @@
 # Copyright (c) 2023 Max Planck Society
 # License: https://bedlam.is.tuebingen.mpg.de/license.html
 #
-# Batch import SMPL-X .abc animations as Skeletal Meshes into Unreal using multiprocessing
+# Batch import SMPL-X .fbx animations as Skeletal Meshes into Unreal using multiprocessing
 #
 # Notes:
-# + Python for Windows: py -3 import_abc_smplx_skeleton_batch.py
+# + Python for Windows: py -3 import_fbx_smplx_skeleton_batch.py
 #
 
 from multiprocessing import Pool
@@ -17,22 +17,23 @@ import time
 # Globals
 UNREAL_APP_PATH = r"H:\UE_5.0\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 UNREAL_PROJECT_PATH = r"C:\Users\maverick\Documents\Unreal Projects\Bedlam_ppl\Bedlam_ppl.uproject"
-# 关键修改：指向新的SkeletalMesh导入脚本
-IMPORT_SCRIPT_PATH = "E:/CS/Graphics/bedlam_render/unreal/import/import_abc_smplx_skeleton.py" # need forward slashes when calling via -ExecutePythonScript
+IMPORT_SCRIPT_PATH = "E:/CS/Graphics/bedlam_render/unreal/import/import_fbx_smplx_skeleton.py" # need forward slashes when calling via -ExecutePythonScript
 
 def worker(unreal_app_path, unreal_project_path, import_script_path, batch_index, num_batches):
-    # "C:\UE\UE_5.0\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UEProjects\5.0\Sandbox5\Sandbox5.uproject" -stdout -FullStdOutLogOutput -ExecutePythonScript="C:/bedlam_render/unreal/import/import_abc_smplx_skeleton.py 0 10" > log-0.txt
-    log_filename = f"aimport_log_batch_{batch_index}.log"
+    # "C:\UE\UE_5.0\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UEProjects\5.0\Sandbox5\Sandbox5.uproject" -stdout -FullStdOutLogOutput -ExecutePythonScript="C:/bedlam_render/unreal/import/import_fbx_smplx_skeleton.py 0 10"
+    log_filename = f"fbx_import_log_batch_{batch_index}.log"
     
-    # 修改：在参数中添加 -log=... 来将日志输出到文件
+    # In Unreal 5.0, redirecting log output to a file is better handled via command line args
     subprocess_args = [
         unreal_app_path, 
         unreal_project_path, 
+        "-stdout",
+        "-FullStdOutLogOutput",
         f"-ExecutePythonScript={import_script_path} {batch_index} {num_batches}",
-        f"-log={log_filename}"  # 添加此行
+        f"-log={log_filename}"
     ]
     
-    print(subprocess_args)
+    print(f"Running batch {batch_index} with args: {subprocess_args}")
     subprocess.run(subprocess_args)
     return True
 

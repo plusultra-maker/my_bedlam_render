@@ -19,7 +19,7 @@ whitelist_subjects_path = None
 #whitelist_animations_path = r"C:\bedlam\render\config\whitelist_animations.txt"
 whitelist_animations_path = None
 
-data_root_unreal = "/Engine/PS/Bedlam/SMPLX"
+data_root_unreal = "/Engine/PS/Bedlam/SMPLX_abc"
 
 def import_abc(data_root, data_root_unreal, current_batch, num_batches, whitelist_subjects=None, whitelist_animations=None):
 

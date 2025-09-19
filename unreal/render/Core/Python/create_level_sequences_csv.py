@@ -18,7 +18,8 @@ import unreal
 WARMUP_FRAMES = 10 # Needed for proper temporal sampling on frame 0 of animations and raytracing warmup. These frames are rendered out with negative numbers and will be deleted in post render pipeline.
 data_root_unreal = "/Engine/PS/Bedlam/"
 clothing_actor_class_path = data_root_unreal + "Core/Materials/BE_ClothingOverlayActor.BE_ClothingOverlayActor_C"
-body_root = data_root_unreal + "SMPLX/"
+body_root = data_root_unreal + "SMPLX_Skeletal/"
+geometry_cache_body_root = data_root_unreal + "SMPLX/" 
 hair_root = data_root_unreal + "Hair/CC/Meshes/"
 animation_root = data_root_unreal + "SMPLX_batch01_hand_animations/"
 hdri_root = data_root_unreal + "HDRI/4k/"
@@ -68,6 +69,76 @@ class CameraPose:
     roll: float
 
 ################################################################################
+def add_skeletal_mesh_for_pov(level_sequence, sequence_body_index, start_frame, end_frame, skeletal_mesh_path, skeletal_animation_path, x, y, z, yaw, pitch, roll):
+    """
+    为POV相机添加隐藏的SkeletalMesh用于骨骼绑定
+    """
+    # 调试：打印路径并检查资产是否存在
+    skeletal_mesh_asset_path = skeletal_mesh_path.split("'")[1]
+    animation_asset_path = skeletal_animation_path.split("'")[1]
+    
+    unreal.log(f"DEBUG: Trying to load skeletal mesh: {skeletal_mesh_asset_path}")
+    unreal.log(f"DEBUG: Asset exists? {unreal.EditorAssetLibrary.does_asset_exist(skeletal_mesh_asset_path)}")
+    
+    unreal.log(f"DEBUG: Trying to load animation: {animation_asset_path}")
+    unreal.log(f"DEBUG: Asset exists? {unreal.EditorAssetLibrary.does_asset_exist(animation_asset_path)}")
+    
+    # 调试：列出目录中的所有资产
+    import_dir = "/".join(skeletal_mesh_asset_path.split("/")[:-1])
+    unreal.log(f"DEBUG: Assets in directory {import_dir}:")
+    all_assets = unreal.EditorAssetLibrary.list_assets(import_dir)
+    for asset in all_assets:
+        if "skel" in asset.lower():
+            unreal.log(f"  Found skeletal asset: {asset}")
+    
+    # 加载SkeletalMesh和Animation
+    skeletal_mesh_object = unreal.load_asset(skeletal_mesh_path.split("'")[1])
+    animation_object = unreal.load_asset(skeletal_animation_path.split("'")[1])
+    unreal.log(f"DEBUG: SkeletalMesh loaded successfully: {skeletal_mesh_object.get_name()}")
+    skeleton = skeletal_mesh_object.skeleton
+    unreal.log(f"DEBUG: Skeleton loaded successfully: {skeleton.get_name()}")
+    
+    if skeletal_mesh_object is None or animation_object is None:
+        unreal.log_error(f"Cannot load skeletal mesh or animation: {skeletal_mesh_path}, {skeletal_animation_path}")
+        return None
+    
+    # 创建隐藏的SkeletalMeshActor
+    skeletal_mesh_actor = unreal.get_editor_subsystem(unreal.EditorActorSubsystem).spawn_actor_from_class(unreal.SkeletalMeshActor, unreal.Vector(0,0,0))
+    skeletal_mesh_actor.set_actor_label(f"{skeletal_mesh_object.get_name()}_POV")
+    skeletal_mesh_actor.skeletal_mesh_component.set_skeletal_mesh(skeletal_mesh_object)
+    
+    # 设置为隐藏
+    skeletal_mesh_actor.set_actor_hidden_in_game(False)  # 临时设为可见
+    skeletal_mesh_actor.skeletal_mesh_component.set_visibility(True)
+    
+    unreal.log(f"DEBUG: Animation length: {animation_object.sequence_length} seconds")
+    #unreal.log(f"DEBUG: Animation frame count: {animation_object.get_number_of_sampling_keys()}")
+    
+    # 添加到序列
+    skeletal_binding = level_sequence.add_spawnable_from_instance(skeletal_mesh_actor)
+    unreal.get_editor_subsystem(unreal.EditorActorSubsystem).destroy_actor(skeletal_mesh_actor)
+    
+    # 添加动画轨道
+    anim_track = skeletal_binding.add_track(unreal.MovieSceneSkeletalAnimationTrack)
+    anim_section = anim_track.add_section()
+    anim_section.params.animation = animation_object
+    anim_section.set_range(start_frame, end_frame)
+    
+    # 设置位置和旋转
+    transform_track = skeletal_binding.add_track(unreal.MovieScene3DTransformTrack)
+    transform_section = transform_track.add_section()
+    transform_section.set_start_frame_bounded(False)
+    transform_section.set_end_frame_bounded(False)
+    transform_channels = transform_section.get_channels()
+    transform_channels[0].set_default(x)     # location X
+    transform_channels[1].set_default(y)     # location Y
+    transform_channels[2].set_default(z)     # location Z
+    transform_channels[3].set_default(roll)  # roll
+    transform_channels[4].set_default(pitch) # pitch
+    transform_channels[5].set_default(yaw)   # yaw
+    
+    return skeletal_binding
+
 
 def add_geometry_cache(level_sequence, sequence_body_index, layer_suffix, start_frame, end_frame, target_object, x, y, z, yaw, pitch, roll, material=None, texture_body_path=None, texture_clothing_overlay_path=None):
     """
@@ -353,6 +424,7 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
     level_sequence.set_display_rate(frame_rate)
 
     cameraroot_binding = None
+    camera_cut_section = None
 
     if not pov_camera:
         if camera_movement == "Static":
@@ -426,18 +498,9 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
         transform_channels[1].set_default(cameraroot_location.y)
         transform_channels[2].set_default(cameraroot_location.z)
 
-    """
-    # Get end frame from body sequence
-    body_object = unreal.load_object(None, body_path)
-    # Python Alembic import bug in 4.27.1 makes cache longer by one frame
-    # Example: 
-    #   126 frame sequence gets imported as end_frame=127
-    #   Last frame for Movie Render Queue is (end_frame-1)
-    #   We need to set end_frame 126 to ensure that [0, 125] is rendered out.
-    end_frame = body_object.end_frame - 1
-    """
     end_frame = sequence_frames
-    camera_cut_section.set_end_frame(end_frame)
+    if camera_cut_section:
+        camera_cut_section.set_end_frame(end_frame)
     level_sequence.set_playback_start(-WARMUP_FRAMES) # Use negative frames as warmup frames
     level_sequence.set_playback_end(end_frame)
 
@@ -466,6 +529,7 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
         sequence_name_section.get_channels()[0].set_default(name)
 
     pov_host_binding = None
+    pov_skeletal_binding = None  
 
     for sequence_body_index, sequence_body in enumerate(sequence_bodies):
 
@@ -493,14 +557,25 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
 
             if pov_camera and sequence_body_index == 0:
                 pov_host_binding = body_binding
-                
-                # 隐藏宿主的身体以避免相机穿模。
-                # 一个更精细的方法是只隐藏头部，但这需要修改材质或骨骼网格体。
-                visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
-                visibility_section = visibility_track.add_section()
-                visibility_section.set_range(-WARMUP_FRAMES, end_frame)
-                # 设置为False来隐藏
-                visibility_section.get_channels()[0].set_default(False)
+    
+                if hasattr(sequence_body, 'skeletal_mesh_path') and sequence_body.skeletal_mesh_path:
+                    pov_skeletal_binding = add_skeletal_mesh_for_pov(
+                        level_sequence, 
+                        sequence_body_index, 
+                        animation_start_frame, 
+                        animation_end_frame, 
+                        sequence_body.skeletal_mesh_path,
+                        sequence_body.skeletal_animation_path,
+                        sequence_body.x, sequence_body.y, sequence_body.z, 
+                        sequence_body.yaw, sequence_body.pitch, sequence_body.roll
+                    )
+                    
+                    visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
+                    visibility_section = visibility_track.add_section()
+                    visibility_section.set_range(-WARMUP_FRAMES, end_frame)
+                    visibility_section.get_channels()[0].set_default(False)
+                else:
+                    unreal.log_warning("POV mode enabled but skeletal mesh paths not available")
 
         else:
             # Add body
@@ -517,14 +592,25 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
 
             if pov_camera and sequence_body_index == 0:
                 pov_host_binding = body_binding
-                
-                # 隐藏宿主的身体以避免相机穿模。
-                # 一个更精细的方法是只隐藏头部，但这需要修改材质或骨骼网格体。
-                visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
-                visibility_section = visibility_track.add_section()
-                visibility_section.set_range(-WARMUP_FRAMES, end_frame)
-                # 设置为False来隐藏
-                visibility_section.get_channels()[0].set_default(False)
+    
+                if hasattr(sequence_body, 'skeletal_mesh_path') and sequence_body.skeletal_mesh_path:
+                    pov_skeletal_binding = add_skeletal_mesh_for_pov(
+                        level_sequence, 
+                        sequence_body_index, 
+                        animation_start_frame, 
+                        animation_end_frame, 
+                        sequence_body.skeletal_mesh_path,
+                        sequence_body.skeletal_animation_path,
+                        sequence_body.x, sequence_body.y, sequence_body.z, 
+                        sequence_body.yaw, sequence_body.pitch, sequence_body.roll
+                    )
+                    
+                    visibility_track = body_binding.add_track(unreal.MovieSceneVisibilityTrack)
+                    visibility_section = visibility_track.add_section()
+                    visibility_section.set_range(-WARMUP_FRAMES, end_frame)
+                    visibility_section.get_channels()[0].set_default(False)
+                else:
+                    unreal.log_warning("POV mode enabled but skeletal mesh paths not available")
                 
             
             # Add clothing if available
@@ -551,66 +637,59 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
                 return False
             
     if pov_host_binding is not None:
-        # 将主相机绑定到LevelSequence
-        camera_binding = level_sequence.add_possessable(camera_actor)
+        # 关键改动：将相机创建为Spawnable，而不是使用Possessable
+        camera_binding = level_sequence.add_spawnable_from_class(unreal.CineCameraActor)
+        camera_binding.set_name("POVCineCamera")
         
-        # 新增：设置POV相机的HFOV
+        # 设置POV相机的HFOV
         if camera_hfov is not None:
-            # 添加相机组件绑定
-            cine_camera_component = camera_actor.get_cine_camera_component()
-            camera_component_binding = level_sequence.add_possessable(cine_camera_component)
-            camera_component_binding.set_parent(camera_binding)
-
-            # 添加焦距轨道
-            focal_length_track = camera_component_binding.add_track(unreal.MovieSceneFloatTrack)
-            focal_length_track.set_property_name_and_path('CurrentFocalLength', 'CurrentFocalLength')
+            focal_length_track = camera_binding.add_track(unreal.MovieSceneFloatTrack)
+            focal_length_track.set_property_name_and_path('CineCameraComponent.CurrentFocalLength', 'CineCameraComponent.CurrentFocalLength')
             focal_length_section = focal_length_track.add_section()
             focal_length_section.set_start_frame_bounded(False)
             focal_length_section.set_end_frame_bounded(False)
 
-            focal_length = get_focal_length(cine_camera_component, camera_hfov)
-            focal_length_section.get_channels()[0].set_default(focal_length)
-        
-        # 添加附加轨道 (Attach Track)
-        attach_track = camera_binding.add_track(unreal.MovieScene3DAttachTrack)
-        attach_section = attach_track.add_section()
-        attach_section.set_range(-WARMUP_FRAMES, end_frame)
-        
-        # 修复：创建正确的 MovieSceneObjectBindingID 对象
-        pov_host_binding_id = unreal.MovieSceneObjectBindingID()
-        pov_host_binding_id.set_editor_property("Guid", pov_host_binding.get_id())
-        attach_section.set_constraint_binding_id(pov_host_binding_id)
-        # 附加到头部的骨骼上
-        attach_section.set_editor_property("attach_socket_name", "head")
+            source_cine_component = camera_actor.get_cine_camera_component()
+            if source_cine_component:
+                focal_length = get_focal_length(source_cine_component, camera_hfov)
+                focal_length_section.get_channels()[0].set_default(focal_length)
+            else:
+                unreal.log_warning("Could not get CineCameraComponent from source camera actor to calculate focal length. HFOV will not be set.")
 
-        # 新增：添加相机的局部偏移来调整视角
-        # 这会将相机稍微向前和向上偏移，避免直接在头骨中心
-        transform_track = camera_binding.add_track(unreal.MovieScene3DTransformTrack)
-        transform_section = transform_track.add_section()
-        transform_section.set_start_frame_bounded(False)
-        transform_section.set_end_frame_bounded(False)
-        transform_channels = transform_section.get_channels()
-        
-        # 局部偏移设置 (相对于头骨的局部坐标系)
-        # X: 向前偏移 (正值向前)
-        # Y: 向右偏移 (正值向右) 
-        # Z: 向上偏移 (正值向上)
-        pov_offset_x = 15.0  # 向前15cm，避免在头部内部
-        pov_offset_y = 0.0   # 不左右偏移
-        pov_offset_z = 5.0   # 向上5cm，模拟眼睛位置
-        
-        transform_channels[0].set_default(pov_offset_x) # location X
-        transform_channels[1].set_default(pov_offset_y) # location Y  
-        transform_channels[2].set_default(pov_offset_z) # location Z
-        transform_channels[3].set_default(0.0) # roll
-        transform_channels[4].set_default(0.0) # pitch
-        transform_channels[5].set_default(0.0) # yaw
+        if pov_skeletal_binding:
+            # 添加附加轨道，这是定位的核心
+            attach_track = camera_binding.add_track(unreal.MovieScene3DAttachTrack)
+            attach_section = attach_track.add_section()
+            
+            # 关键修复：先设置绑定ID，再设置范围（与hair函数保持一致）
+            skeletal_binding_id = unreal.MovieSceneObjectBindingID()
+            skeletal_binding_id.set_editor_property("Guid", pov_skeletal_binding.get_id())
+            
+            attach_section.set_constraint_binding_id(skeletal_binding_id)
+            attach_section.set_editor_property("attach_socket_name", "head")
+            
+            # 最后设置范围
+            attach_section.set_range(-WARMUP_FRAMES, end_frame)
+            
+            unreal.log(f"  POV camera attached to 'head' bone on SkeletalMesh")
+            # 关键修复：设置附加偏移，而不是使用Transform轨道
+            # 这样可以避免Transform轨道覆盖Attach效果
+            pov_offset_location = unreal.Vector(15.0, 0.0, 10.0)  # X向前, Y向右, Z向上
+            pov_offset_rotation = unreal.Rotator(0.0, 0.0, 0.0)   # Roll, Pitch, Yaw
+            
+            #attach_section.set_editor_property("attach_location", pov_offset_location)
+            #attach_section.set_editor_property("attach_rotation", pov_offset_rotation)
+            
+            #unreal.log(f"  POV camera attached to 'head' bone with offset {pov_offset_location}")
+            
+            # 移除Transform轨道 - 这是关键修复！
+            # 不再添加Transform轨道，避免与Attach轨道冲突
 
-        # 将Camera Cut轨道的相机设置为我们刚绑定的相机
+        # 将Camera Cut轨道的相机设置为我们刚绑定的Spawnable相机
         camera_binding_id = unreal.MovieSceneObjectBindingID()
         camera_binding_id.set_editor_property("Guid", camera_binding.get_id())
         camera_cut_section.set_editor_property("CameraBindingID", camera_binding_id)
-
+        
     unreal.EditorAssetLibrary.save_asset(level_sequence.get_path_name())
 
     return True
@@ -772,7 +851,18 @@ if __name__ == '__main__':
                     # Body: GeometryCache'/Engine/PS/Bedlam/SMPLX/rp_aaron_posed_002/rp_aaron_posed_002_0000.rp_aaron_posed_002_0000'
                     # Clothing: GeometryCache'/Engine/PS/Bedlam/Clothing/rp_aaron_posed_002/rp_aaron_posed_002_0000_clo.rp_aaron_posed_002_0000_clo'
 
-                    body_path = f"GeometryCache'{body_root}{subject}/{body}.{body}'"
+                    if pov_camera:
+                        # POV模式：加载SkeletalMesh和Animation
+                        unreal.log("    POV mode enabled, using SkeletalMesh and Animation")
+                        skeletal_mesh_path = f"SkeletalMesh'{body_root}{subject}/{body}.{body}'"
+                        skeletal_animation_path = f"AnimSequence'{body_root}{subject}/{body}.{body}_Animation'"
+                        # 同时也需要GeometryCache用于渲染
+                        body_path = f"GeometryCache'{geometry_cache_body_root}{subject}/{body}.{body}'"
+                    else:
+                        # 非POV模式：只使用GeometryCache
+                        body_path = f"GeometryCache'{geometry_cache_body_root}{subject}/{body}.{body}'"
+                        skeletal_mesh_path = None
+                        skeletal_animation_path = None
 
                     have_body = unreal.EditorAssetLibrary.does_asset_exist(body_path)
                     if not have_body:
@@ -801,6 +891,14 @@ if __name__ == '__main__':
                         animation_path = f"AnimSequence'{animation_root}{subject}/{body}_Anim.{body}_Anim'"
 
                     sequence_body = SequenceBody(subject, body_path, clothing_path, hair_path, animation_path, x, y, z, yaw, pitch, roll, start_frame, texture_body, texture_clothing, texture_clothing_overlay)
+                    
+                    if pov_camera:
+                        sequence_body.skeletal_mesh_path = skeletal_mesh_path
+                        sequence_body.skeletal_animation_path = skeletal_animation_path
+                    else:
+                        sequence_body.skeletal_mesh_path = None
+                        sequence_body.skeletal_animation_path = None
+                    
                     sequence_bodies.append(sequence_body)
 
                     # Check if body was last item in current sequence
