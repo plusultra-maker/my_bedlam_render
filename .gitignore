@@ -16,3 +16,13 @@ fbx/
 fbx_test/
 images/
 unrealego/
+
+# Large files
+*.zip
+*.pkl
+*.abc
+*.fbx
+gendered_ground_truth.zip
+renderpeople_mixamo_labels_with_original.pkl
+bedlam_body_textures_meshcapade.zip
+smplx_blender_addon_300_20220623.zip
