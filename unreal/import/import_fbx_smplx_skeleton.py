@@ -12,7 +12,14 @@ import unreal
 
 # --- Configuration ---
 # Source directory containing the .fbx files
-data_root = r"E:\CS\Graphics\bedlam_render\fbx"
+data_root = r"E:\CS\Graphics\bedlam_render\fbx_test"
+
+#whitelist_subjects_path = r"C:\bedlam\render\config\whitelist_subjects.txt"
+whitelist_subjects_path = None
+
+#whitelist_animations_path = r"C:\bedlam\render\config\whitelist_animations.txt"
+whitelist_animations_path = None
+
 # Target content directory in Unreal
 data_root_unreal = "/Game/PS/Bedlam/SMPLX_fbx/"
 # Path for the skeleton to be used. Leave as None to auto-create from the first file.
@@ -24,7 +31,6 @@ def get_fbx_import_options(skeleton_to_use):
     # Set Skeletal Mesh options
     options.set_editor_property("import_as_skeletal", True)
     options.set_editor_property("import_mesh", True)
-    options.skeletal_mesh_import_data.set_editor_property("import_content_type", unreal.FBXImportContentType.FBX_CONTENT_TYPE_SKELETAL_MESH)
 
     # Assign skeleton if one is provided
     if skeleton_to_use:
@@ -33,8 +39,10 @@ def get_fbx_import_options(skeleton_to_use):
     # Set transform options to match the original abc script
     # Scale to convert from meters (Blender) to centimeters (Unreal)
     options.skeletal_mesh_import_data.set_editor_property("import_uniform_scale", 100.0)
-    # Rotate to align coordinate systems (Y-Up to Z-Up)
-    options.skeletal_mesh_import_data.set_editor_property("import_rotation", unreal.Rotator(0, 0, 0))
+    # Apply the same rotation as the abc script: [90.0, 0.0, 0.0]
+    options.skeletal_mesh_import_data.set_editor_property("import_rotation", unreal.Rotator(90, 0, 0))
+    # Apply translation if needed
+    options.skeletal_mesh_import_data.set_editor_property("import_translation", unreal.Vector(0.0, 0.0, 0.0))
     
     # Disable material and texture import to avoid clutter
     options.set_editor_property("import_materials", False)
@@ -74,6 +82,19 @@ def import_fbx(data_root, data_root_unreal, current_batch, num_batches, whitelis
             unreal.log_warning(f"Could not load specified skeleton: {skeleton_path}. A new one will be created.")
 
     for fbx_path in import_fbx_paths:
+        
+        if whitelist_subjects is not None:
+            current_subject_name = fbx_path.parent.name
+            if current_subject_name not in whitelist_subjects:
+                unreal.log(f"Skipping FBX. Subject not whitelisted: {fbx_path}")
+                continue
+
+        if whitelist_animations is not None:
+            current_animation_name = fbx_path.stem.split("_")[-1]
+            if current_animation_name not in whitelist_animations:
+                unreal.log(f"Skipping FBX. Animation not whitelisted: {fbx_path}")
+                continue
+
         unreal.log(f"Processing FBX: {fbx_path}")
 
         uasset_folder_name = fbx_path.parent.name
@@ -130,6 +151,16 @@ if __name__ == "__main__":
         current_batch = int(sys.argv[1])
         num_batches = int(sys.argv[2])
 
+    whitelist_subjects = None
+    if whitelist_subjects_path is not None:
+        with open(whitelist_subjects_path) as f:
+            whitelist_subjects = f.read().splitlines()
+
+    whitelist_animations = None
+    if whitelist_animations_path is not None:
+        with open(whitelist_animations_path) as f:
+            whitelist_animations = f.read().splitlines()
+
     start_time = time.perf_counter()
-    import_fbx(data_root, data_root_unreal, current_batch, num_batches)
+    import_fbx(data_root, data_root_unreal, current_batch, num_batches, whitelist_subjects, whitelist_animations)
     print(f"FBX SkeletalMesh batch import finished. Total import time: {(time.perf_counter() - start_time):.1f}s")

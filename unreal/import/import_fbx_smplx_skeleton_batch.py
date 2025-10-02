@@ -63,4 +63,4 @@ if __name__ == "__main__":
 
     print(f"Finished. Total batch conversion time: {(time.perf_counter() - start_time):.1f}s")
 
-# python import_abc_smplx_skeleton_batch.py 16 8
+# python import_fbx_smplx_skeleton_batch.py 16 8

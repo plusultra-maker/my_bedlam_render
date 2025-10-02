@@ -44,7 +44,7 @@ mkdir -p /mnt/c/bedlam/images/test
 ./be_generate_sequences_crowd.py be_1_1 | tee /mnt/e/CS/Graphics/bedlam_render/images/test/be_seq.csv
 # 1 person, 1 sequence, no HDR image information
 ```
-
+./be_generate_sequences_crowd.py be_1_1000 | tee /mnt/e/CS/Graphics/bedlam_render/images/test/be_seq_part1.csv
 
 ## Modify existing scene definition
 + [be_modify_sequences.py](be_modify_sequences.py)
