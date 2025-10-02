@@ -28,8 +28,11 @@ class Config(NamedTuple):
 configs = {}
 
 # be_1: 1 person in 8m x 8m area with center at camera distance 10m
-config_1_1 = Config(bodies_min=1, bodies_max=1, x_offset=1000, x_min=-400, x_max=400, y_min=-400, y_max=400, yaw_min=0, yaw_max=360, num_sequences=1, unique_subjects=False)
+config_1_1 = Config(bodies_min=1, bodies_max=1, x_offset=600, x_min=-200, x_max=200, y_min=-200, y_max=200, yaw_min=0, yaw_max=360, num_sequences=1, unique_subjects=False)
 configs["be_1_1"] = config_1_1
+
+config_1_1000 = Config(bodies_min=1, bodies_max=1, x_offset=600, x_min=-200, x_max=200, y_min=-200, y_max=200, yaw_min=0, yaw_max=360, num_sequences=1000, unique_subjects=False)
+configs["be_1_1000"] = config_1_1000
 
 # be_2: 2 people in 8m x 8m area with center at camera distance 10m
 config_2_1 = Config(bodies_min=2, bodies_max=2, x_offset=1000, x_min=-400, x_max=400, y_min=-400, y_max=400, yaw_min=0, yaw_max=360, num_sequences=1, unique_subjects=False)

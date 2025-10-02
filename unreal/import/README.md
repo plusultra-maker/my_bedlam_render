@@ -6,7 +6,7 @@ The various scripts in this folder help with automating BEDLAM related data impo
 
 # Scripts
 
-## Animated SMPL-X bodies
+## Animated SMPL-X bodies (Geometry Cache)
 + [import_abc_smplx_batch.py](import_abc_smplx_batch.py)
 + Use this script to batch import SMPL-X Alembic ABC files as `GeometryCache`
 + Requirements
@@ -17,6 +17,19 @@ The various scripts in this folder help with automating BEDLAM related data impo
     + Run multiprocess batch import from Windows command prompt. The example below uses 10 simultaneous Unreal Engine instances for data import of 1000 data batches. Depending on your available CPU core count and available main memory (128GB+ recommended) you can increase or need to decrease the amount of processes. For fastest processing of BEDLAM release data make sure that you have a fast SSD with large enough space (700GB).
         + `py -3 import_abc_smplx_batch.py 1000 10`
         + `py -3 import_abc_smplx_batch.py 1200 12`
+
+## Animated SMPL-X bodies (Skeletal Mesh)
++ [import_fbx_smplx_skeleton_batch.py](import_fbx_smplx_skeleton_batch.py)
++ Use this script to batch import SMPL-X FBX files as `SkeletalMesh` with bone animation
++ Requirements
+    + Python for Windows (3.10.2 or later)
+    + Blank Unreal project with active Python Editor Script Plugin
+    + FBX files generated using the Blender export scripts
++ Usage
+    + Adjust data paths at top of `import_fbx_smplx_skeleton_batch.py` and `import_fbx_smplx_skeleton.py` scripts
+    + Make sure `data_root` points to your FBX output directory (e.g., `E:\CS\Graphics\bedlam_render\fbx`)
+    + Run multiprocess batch import from Windows command prompt. The example below uses 6 simultaneous Unreal Engine instances for data import of 16 data batches.
+        + `py -3 import_fbx_smplx_skeleton_batch.py 16 6`
 
 ## Simulated animated clothing
 + [import_abc_clothing_batch.py](import_abc_clothing_batch.py)
