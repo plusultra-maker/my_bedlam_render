@@ -19,6 +19,8 @@ unrealego/
 gendered_ground_truth/
 body_texture_previews/
 tools/sequence_generation/venv/
+image/
+
 
 # Large files
 *.zip
@@ -29,3 +31,5 @@ gendered_ground_truth.zip
 renderpeople_mixamo_labels_with_original.pkl
 bedlam_body_textures_meshcapade.zip
 smplx_blender_addon_300_20220623.zip
+scp.ps1
+reprocess_image.py
