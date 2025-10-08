@@ -69,6 +69,21 @@ BEDLAM rendering works with vanilla Unreal Editor 5.0.3 release. Unreal source c
 + Click on `[Render (ground truth export)]` to start rendering with automated logging of camera ground truth
     + Details: [render_movie_render_queue.py](Core/Python/render_movie_render_queue.py)
 
+## POV (First-Person) Rendering
++ To generate first-person view sequences:
+  1. Create a standard `be_seq.csv` with your desired sequences
+  2. Run the panoramic view expansion script:
+     ```
+     python tools/sequence_generation/be_add_pov_six_views.py be_seq.csv be_seq_pov_panoramic.csv
+     ```
+  3. Use `be_seq_pov_panoramic.csv` in the BEDLAM UI to create LevelSequences
++ The POV mode will:
+  + Load both GeometryCache (for rendering) and SkeletalMesh (for bone attachment)
+  + Attach a camera to the character's head bone
+  + Generate 6 views per sequence (front, back, left, right, up, down)
+  + Use 90° HFOV and 1:1 aspect ratio for panoramic rendering
++ Note: Body rotation remains unchanged; only camera orientation varies per view
+
 # Notes
 + Hair
     + We are not allowed to release the used commercial hair assets. Please read [BEDLAM](https://bedlam.is.tuebingen.mpg.de/) paper and also supplementary materials for further details on this topic. We suggest to consider strand based hair grooms as mentioned in the paper. Please understand that we will not be able to provide support for this topic in this repo.

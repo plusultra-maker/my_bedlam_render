@@ -12,7 +12,7 @@ import unreal
 
 # --- Configuration ---
 # Source directory containing the .fbx files
-data_root = r"E:\CS\Graphics\bedlam_render\fbx_test"
+data_root = r"E:\CS\Graphics\bedlam_render\fbx_test_copy"
 
 #whitelist_subjects_path = r"C:\bedlam\render\config\whitelist_subjects.txt"
 whitelist_subjects_path = None
@@ -21,7 +21,7 @@ whitelist_subjects_path = None
 whitelist_animations_path = None
 
 # Target content directory in Unreal
-data_root_unreal = "/Game/PS/Bedlam/SMPLX_fbx/"
+data_root_unreal = "/Engine/PS/Bedlam/SMPLX_fbx/"
 # Path for the skeleton to be used. Leave as None to auto-create from the first file.
 skeleton_path = None
 
@@ -40,7 +40,7 @@ def get_fbx_import_options(skeleton_to_use):
     # Scale to convert from meters (Blender) to centimeters (Unreal)
     options.skeletal_mesh_import_data.set_editor_property("import_uniform_scale", 100.0)
     # Apply the same rotation as the abc script: [90.0, 0.0, 0.0]
-    options.skeletal_mesh_import_data.set_editor_property("import_rotation", unreal.Rotator(90, 0, 0))
+    options.skeletal_mesh_import_data.set_editor_property("import_rotation", unreal.Rotator(0, 0, 0)) # TODO: 现在这个rotation还是不对，再试试
     # Apply translation if needed
     options.skeletal_mesh_import_data.set_editor_property("import_translation", unreal.Vector(0.0, 0.0, 0.0))
     

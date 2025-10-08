@@ -31,7 +31,10 @@ configs = {}
 config_1_1 = Config(bodies_min=1, bodies_max=1, x_offset=600, x_min=-200, x_max=200, y_min=-200, y_max=200, yaw_min=0, yaw_max=360, num_sequences=1, unique_subjects=False)
 configs["be_1_1"] = config_1_1
 
-config_1_1000 = Config(bodies_min=1, bodies_max=1, x_offset=600, x_min=-200, x_max=200, y_min=-200, y_max=200, yaw_min=0, yaw_max=360, num_sequences=1000, unique_subjects=False)
+config_1_2 = Config(bodies_min=1, bodies_max=1, x_offset=600, x_min=-200, x_max=200, y_min=-200, y_max=200, yaw_min=0, yaw_max=360, num_sequences=2, unique_subjects=True)
+configs["be_1_2"] = config_1_2
+
+config_1_1000 = Config(bodies_min=1, bodies_max=1, x_offset=400, x_min=-100, x_max=100, y_min=-100, y_max=100, yaw_min=0, yaw_max=360, num_sequences=1000, unique_subjects=False,camera_height=100.0)
 configs["be_1_1000"] = config_1_1000
 
 # be_2: 2 people in 8m x 8m area with center at camera distance 10m

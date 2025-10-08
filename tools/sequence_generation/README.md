@@ -46,6 +46,8 @@ mkdir -p /mnt/c/bedlam/images/test
 ```
 ./be_generate_sequences_crowd.py be_1_1000 | tee /mnt/e/CS/Graphics/bedlam_render/images/test/be_seq_part1.csv
 
+./be_generate_sequences_crowd.py be_1_2 | tee /mnt/e/CS/Graphics/bedlam_render/images/test/be_seq_test2.csv
+
 ## Modify existing scene definition
 + [be_modify_sequences.py](be_modify_sequences.py)
 + Modifies existing `be_seq.csv` body scene definition with desired option

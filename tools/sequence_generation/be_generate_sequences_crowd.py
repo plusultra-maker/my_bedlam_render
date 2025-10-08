@@ -29,16 +29,16 @@ CV_IMAGESIZE = 101 # represents 10m distance with origin in center of image at (
 CV_M_TO_PIXELS = 10
 CV_BODY_RADIUS = 5  # 50cm body radius
 
-#SMPLX_NPZ_ANIMATION_FOLDER = Path("/mnt/e/CS/Graphics/bedlam_render/animations/gendered_ground_truth")
-SMPLX_NPZ_ANIMATION_FOLDER = Path("/mnt/e/CS/Graphics/bedlam_render/animations/gt_part1_male_female")
+SMPLX_NPZ_ANIMATION_FOLDER = Path("/mnt/e/CS/Graphics/bedlam_render/animations/gendered_ground_truth")
+#SMPLX_NPZ_ANIMATION_FOLDER = Path("/mnt/e/CS/Graphics/bedlam_render/animations/gt_part1_male_female")
 
 
 SUBJECT_GENDER_PATH = Path("../../config/gender.csv")               # Gender information for each subject
 TEXTURES_BODY_PATH = Path("../../config/textures_body.txt")         # List of available body textures
 TEXTURES_CLOTHING_PATH = Path("../../config/textures_clothing.csv") # List of available clothing textures per subject
 
-#WHITELIST_PATH = Path("../../config/whitelist_animations_test.json")     # Per-subject whitelisted animations
-WHITELIST_PATH = Path("../../config/whitelist_animations_highbmihand_20221019.json")
+WHITELIST_PATH = Path("../../config/whitelist_animations_test.json")     # Per-subject whitelisted animations
+#WHITELIST_PATH = Path("../../config/whitelist_animations_highbmihand_20221019.json")
 
 WHITELIST_HAIR_PATH = Path("../../config/whitelist_hair.json")
 
