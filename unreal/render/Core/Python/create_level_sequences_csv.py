@@ -680,8 +680,8 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
                 1: unreal.Rotator(0, 0, -90),      # back: 向后看（Yaw+180）
                 2: unreal.Rotator(0, 0, 0),      # left: 向左看（Yaw-90）
                 3: unreal.Rotator(0, 0, 180),       # right: 向右看（Yaw+90）
-                4: unreal.Rotator(0, -90, 90),      # up: 向上看（Pitch-90）
-                5: unreal.Rotator(0, 90, 90),       # down: 向下看（Pitch+90）
+                4: unreal.Rotator(0, 90, 90),      # up: 向上看（
+                5: unreal.Rotator(0, -90, 90),       # down: 向下看（
             }
             
             # 相机位置偏移：稍微向前偏移以避免与头部模型相交
