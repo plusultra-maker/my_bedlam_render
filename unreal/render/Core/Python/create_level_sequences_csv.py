@@ -323,11 +323,23 @@ def add_static_camera(level_sequence, camera_actor, camera_pose, camera_hfov):
     transform_channels[5].set_default(camera_pose.yaw) # yaw
     """
 
+    cine_camera_component = camera_actor.get_cine_camera_component()
+    post_process = cine_camera_component.post_process_settings
+    post_process.auto_exposure_method = unreal.AutoExposureMethod.AEM_MANUAL
+    post_process.override_auto_exposure_method = True
+    post_process.auto_exposure_apply_physical_camera_exposure = True
+    post_process.override_camera_shutter_speed = True
+    post_process.camera_shutter_speed = 250  # 1/250 s to reduce motion blur
+    post_process.override_camera_iso = True
+    post_process.camera_iso = 400.0
+    cine_camera_component.current_aperture = 4.0  # f/5.6 for daytime
+    post_process.override_vignette_intensity = True
+    post_process.vignette_intensity = 0.0
+
     if camera_hfov is not None:
         # Add focal length CameraComponent track to match specified hfov
 
         # Add a cine camera component binding using the component of the camera actor
-        cine_camera_component = camera_actor.get_cine_camera_component()
         camera_component_binding = level_sequence.add_possessable(cine_camera_component)
         camera_component_binding.set_parent(camera_binding)
 
@@ -624,6 +636,18 @@ def add_level_sequence(name, camera_actor, camera_pose, ground_truth_logger_acto
             
             # 2. 获取CineCameraComponent并设置属性
             cine_camera_component = pov_camera_actor.get_cine_camera_component()
+            
+            post_process = cine_camera_component.post_process_settings
+            post_process.auto_exposure_method = unreal.AutoExposureMethod.AEM_MANUAL
+            post_process.override_auto_exposure_method = True
+            post_process.auto_exposure_apply_physical_camera_exposure = True
+            post_process.override_camera_shutter_speed = True
+            post_process.camera_shutter_speed = 1  # 1/250 s to reduce motion blur
+            post_process.override_camera_iso = True
+            post_process.camera_iso = 1000.0
+            cine_camera_component.current_aperture = 5.6  # f/5.6 for daytime
+            post_process.override_vignette_intensity = True
+            post_process.vignette_intensity = 0.0
             
             # 设置1:1传感器 (正方形画面用于全景渲染)
             # 需要直接修改filmback的sensor尺寸来确保真正的1:1纵横比
