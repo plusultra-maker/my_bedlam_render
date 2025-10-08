@@ -16,6 +16,8 @@ fbx/
 fbx_test/
 images/
 unrealego/
+gendered_ground_truth/
+body_texture_previews/
 tools/sequence_generation/venv/
 
 # Large files

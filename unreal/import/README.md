@@ -16,6 +16,7 @@ The various scripts in this folder help with automating BEDLAM related data impo
     + Adjust data paths at top of `import_abc_smplx_batch.py` and `import_abc_smplx.py` scripts
     + Run multiprocess batch import from Windows command prompt. The example below uses 10 simultaneous Unreal Engine instances for data import of 1000 data batches. Depending on your available CPU core count and available main memory (128GB+ recommended) you can increase or need to decrease the amount of processes. For fastest processing of BEDLAM release data make sure that you have a fast SSD with large enough space (700GB).
         + `py -3 import_abc_smplx_batch.py 1000 10`
+        + `py -3 import_abc_smplx_batch.py 1200 12`
 
 ## Animated SMPL-X bodies (Skeletal Mesh)
 + [import_fbx_smplx_skeleton_batch.py](import_fbx_smplx_skeleton_batch.py)

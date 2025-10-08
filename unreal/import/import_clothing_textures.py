@@ -10,7 +10,7 @@ import sys
 import time
 import unreal
 
-DATA_ROOT = r"E:\bedlam\material_4rendering\clothing_abc"
+DATA_ROOT = r"C:\Users\98391\Desktop\Boyang\bedlam_smplx_textures_clothing\bedlam_smplx_textures_clothing\smplx_textures_clothing_2048_20220905a"
 DATA_ROOT_UNREAL = "/Engine/PS/Bedlam/Clothing/Materials"
 MASTER_MATERIAL_PATH = "/Engine/PS/Bedlam/Core/Materials/M_Clothing"
 def import_textures(texture_paths):

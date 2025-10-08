@@ -17,7 +17,7 @@ import sys
 import time
 
 # Globals
-BLENDER_APP_PATH = r"D:\Blender\blender.exe"
+BLENDER_APP_PATH = r"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"
 DEFAULT_PROCESSES = 6
 
 def worker(blender_app_path, input, output):

@@ -34,6 +34,8 @@ py -3 smplx_anim_to_alembic_batch.py C:\bedlam\animations\gendered_ground_truth 
 
 python smplx_anim_to_alembic_batch.py E:\CS\Graphics\bedlam_render\animations\gendered_ground_truth_test E:\CS\Graphics\bedlam_render\abc_test 6
 ```
+py -3 smplx_anim_to_alembic_batch.py C:\Users\98391\Desktop\Boyang\bedlam_render\gendered_ground_truth C:\Users\98391\Desktop\Boyang\bedlam_render\abc 12
+
 
 # Exporting to FBX
 The process is identical to exporting to Alembic, but uses different scripts to produce `.fbx` files instead. FBX files include the armature, which can be useful in different workflows.
@@ -49,6 +51,8 @@ py -3 smplx_anim_to_fbx_batch.py C:\bedlam\animations\gendered_ground_truth C:\b
 
 python smplx_anim_to_fbx_batch.py E:\CS\Graphics\bedlam_render\animations\gendered_ground_truth_test E:\CS\Graphics\bedlam_render\fbx_test 6
 ```
+
+py -3 smplx_anim_to_fbx_batch.py C:\Users\98391\Desktop\Boyang\my_bedlam_render\gendered_ground_truth C:\Users\98391\Desktop\Boyang\my_bedlam_render\fbx 12
 
 # Notes
 + BEDLAM .npz files use Y-Up format in SMPL-X OpenGL coordinate frame notation. To properly manually import them into Blender with the add-on you need to make sure that `Format:SMPL-X` is selected in the import dialog. Also enable SMPL-X pose correctives by activating `Use keyframed corrective pose weights`. The Alembic conversion automation script ([smplx_anim_to_alembic.py](smplx_anim_to_alembic.py)) is always using these options while it is running.
