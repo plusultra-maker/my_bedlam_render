@@ -17,7 +17,7 @@ import unreal
 preview_mode = False
 output_dir = r"C:\bedlam\images\test"
 
-def add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr):
+def add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr, use_square_output):
 	global preview_mode
 	global output_dir
 
@@ -54,10 +54,16 @@ def add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr):
 	output_setting.output_directory = unreal.DirectoryPath(output_directory)
 	output_setting.file_name_format = file_name_format
 
-	if preview_mode:
-		output_setting.output_resolution = unreal.IntPoint(640, 360)
+	if use_square_output:
+		if preview_mode:
+			output_setting.output_resolution = unreal.IntPoint(360, 360)
+		else:
+			output_setting.output_resolution = unreal.IntPoint(720, 720)
 	else:
-		output_setting.output_resolution = unreal.IntPoint(1280, 720)
+		if preview_mode:
+			output_setting.output_resolution = unreal.IntPoint(640, 360)
+		else:
+			output_setting.output_resolution = unreal.IntPoint(1280, 720)
 
 	output_setting.zero_pad_frame_numbers = 4
 	output_setting.output_frame_step = output_frame_step
@@ -69,11 +75,11 @@ def add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr):
 		antialiasing_setting.spatial_sample_count = 1
 		antialiasing_setting.temporal_sample_count = 1
 	else:
-		antialiasing_setting.spatial_sample_count = 1
+		antialiasing_setting.spatial_sample_count = 8
 
 		# Use 7 temporal samples instead of 8 to get sample on keyframe for default frame center shutter mode
 		# https://dev.epicgames.com/community/learning/tutorials/GxdV/unreal-engine-demystifying-sampling-in-movie-render-queue
-		antialiasing_setting.temporal_sample_count = 7
+		antialiasing_setting.temporal_sample_count = 1
 
 	antialiasing_setting.override_anti_aliasing = True
 
@@ -174,6 +180,7 @@ if __name__ == '__main__':
 	output_frame_step = 1
 	use_tsr = False
 	generate_exr = False
+	use_square_output = False
 
 	if len(sys.argv) >= 3:
 		values = sys.argv[2].split("_")
@@ -184,6 +191,8 @@ if __name__ == '__main__':
 		if "DepthMask" in values:
 			generate_exr = True # generate depth map and segmentation masks in .exr file (separate render pass)
 
+		if "fisheye" in values:
+			use_square_output = True
 
 	# Setup movie render queue
 	subsystem = unreal.get_editor_subsystem(unreal.MoviePipelineQueueSubsystem)
@@ -203,7 +212,7 @@ if __name__ == '__main__':
 		level_sequence = asset
 		unreal.log(f"  Adding: {level_sequence.get_full_name()}")
 
-		add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr)
+		add_render_job(pipeline_queue, level_sequence, output_frame_step, use_tsr, use_square_output)
 		if generate_exr:
 			# Render depth and segmentation masks into multilayer EXR file
 			add_render_job_exr(pipeline_queue, level_sequence, output_frame_step)

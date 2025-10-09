@@ -11,7 +11,7 @@
 # Example:
 # python be_add_pov_six_views.py be_seq.csv be_seq_panoramic.csv
 # python be_add_pov_six_views.py be_seq_test2.csv be_seq_test2_pov_panoramic.csv
-
+# python be_add_pov_six_views.py be_seq_part1.csv be_seq_part1_pov_panoramic.csv
 import csv
 import sys
 from pathlib import Path

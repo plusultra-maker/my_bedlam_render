@@ -34,3 +34,4 @@ smplx_blender_addon_300_20220623.zip
 scp.ps1
 reprocess_image.py
 unreal/import/debug.txt
+whitelist_gen.py
